@@ -1,6 +1,12 @@
 import axios from 'axios';
 import { env } from '@/lib/env';
 
+export interface LoginHistoryEntry {
+  timestamp: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
 export interface User {
   _id: string;
   email: string;
@@ -10,7 +16,7 @@ export interface User {
   emailVerified?: boolean;
   verified?: boolean;
   createdAt?: string;
-  loginHistory?: any[];
+  loginHistory?: LoginHistoryEntry[];
 }
 
 export interface LoginCredentials {
@@ -38,7 +44,7 @@ interface RegisterResponse {
 
 export const authService = {
   async login(credentials: { email: string; password: string }): Promise<AuthResponse> {
-    const { data } = await axios.post(`${env.API_URL}/user/login`, credentials, {
+    const { data } = await axios.post(`${env.API_URL}/auth/login`, credentials, {
       withCredentials: true,
     });
     return data;
@@ -49,34 +55,34 @@ export const authService = {
     email: string;
     password: string;
   }): Promise<RegisterResponse> {
-    const { data } = await axios.post(`${env.API_URL}/user/signup`, userData, {
+    const { data } = await axios.post(`${env.API_URL}/auth/register`, userData, {
       withCredentials: true,
     });
     return data;
   },
 
   logout: async (): Promise<void> => {
-    await axios.get(`${env.API_URL}/user/logout`, {
+    await axios.post(`${env.API_URL}/auth/logout`, {}, {
       withCredentials: true,
     });
   },
 
   getProfile: async (): Promise<AuthResponse['user']> => {
-    const res = await axios.get(`${env.API_URL}/user/profile`, {
+    const res = await axios.get(`${env.API_URL}/users/me`, {
       withCredentials: true,
     });
     return res.data;
   },
 
   sendOTP: async (email: string): Promise<{ message: string }> => {
-    const res = await axios.post(`${env.API_URL}/user/send-otp`, { email }, {
+    const res = await axios.post(`${env.API_URL}/auth/send-otp`, { email }, {
       withCredentials: true,
     });
     return res.data;
   },
 
   verifyOTP: async (email: string, otp: string): Promise<{ message: string }> => {
-    const res = await axios.post(`${env.API_URL}/user/verify-otp`, { email, otp }, {
+    const res = await axios.post(`${env.API_URL}/auth/verify-otp`, { email, otp }, {
       withCredentials: true,
     });
     return res.data;
