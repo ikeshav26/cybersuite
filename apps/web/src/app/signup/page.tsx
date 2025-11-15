@@ -11,17 +11,13 @@ const SignupPage = () => {
   const [username, setusername] = useState("");
   const [password, setpassword] = useState("");
   const [email, setemail] = useState("");
-  const [otp, setotp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState(1);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
 
-  const sendOtpHandler = async (e: React.FormEvent) => {
+  const submithandler = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!username.trim() || !email.trim() || !password.trim()) {
@@ -42,54 +38,6 @@ const SignupPage = () => {
     setIsLoading(true);
 
     try {
-      const res = await authService.sendOTP(email);
-
-      toast.success("OTP sent to your email!");
-      setOtpSent(true);
-      setStep(2);
-    } catch (err: any) {
-      toast.error(err.message || "Error sending OTP");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const verifyOtpHandler = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!otp.trim()) {
-      toast.error("OTP is required");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      await authService.verifyOTP(email, otp);
-
-      toast.success("OTP verified successfully!");
-      setOtpVerified(true);
-      setStep(3);
-    } catch (err: any) {
-      toast.error(err.message || "Invalid OTP");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const submithandler = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!otpVerified) {
-      toast.error("Please verify OTP first");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
       const res = await authService.register({ username, email, password });
 
       setAuth(res.user, res.token);
@@ -97,7 +45,6 @@ const SignupPage = () => {
       setusername("");
       setemail("");
       setpassword("");
-      setotp("");
 
       router.push("/");
       toast.success(res.message || "Account created successfully");
@@ -187,206 +134,74 @@ const SignupPage = () => {
                 style={{ backgroundColor: "rgba(36, 36, 36, 0.95)" }}
               >
                 <h2 className="text-2xl text-white font-bold mb-1 text-center">
-                  {step === 1 && "Create Account"}
-                  {step === 2 && "Verify Email"}
-                  {step === 3 && "Complete Setup"}
+                  Create Account
                 </h2>
 
                 <p className="text-gray-400 text-sm text-center mb-8">
-                  {step === 1 && "Enter your credentials to get started"}
-                  {step === 2 && "Check your email for verification code"}
-                  {step === 3 && "Registration almost complete"}
+                  Enter your credentials to get started
                 </p>
 
-                <div className="flex justify-center mb-8">
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                        step >= 1
-                          ? "bg-white text-black"
-                          : "bg-gray-700 text-gray-400"
-                      }`}
-                    >
-                      1
-                    </div>
-                    <div
-                      className={`h-px w-6 transition-all duration-300 ${step >= 2 ? "bg-white" : "bg-gray-700"}`}
-                    ></div>
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                        step >= 2
-                          ? "bg-white text-black"
-                          : "bg-gray-700 text-gray-400"
-                      }`}
-                    >
-                      2
-                    </div>
-                    <div
-                      className={`h-px w-6 transition-all duration-300 ${step >= 3 ? "bg-white" : "bg-gray-700"}`}
-                    ></div>
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                        step >= 3
-                          ? "bg-white text-black"
-                          : "bg-gray-700 text-gray-400"
-                      }`}
-                    >
-                      3
-                    </div>
+                <form onSubmit={submithandler} className="space-y-5">
+                  <div className="space-y-4">
+                    <input
+                      value={username}
+                      onChange={(e) => setusername(e.target.value)}
+                      type="text"
+                      placeholder="Username"
+                      className="w-full px-4 py-3 rounded-xl bg-black/40 text-white placeholder-gray-400 border border-gray-600/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-300"
+                    />
+
+                    <input
+                      value={email}
+                      onChange={(e) => setemail(e.target.value)}
+                      type="email"
+                      placeholder="Email address"
+                      className="w-full px-4 py-3 rounded-xl bg-black/40 text-white placeholder-gray-400 border border-gray-600/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-300"
+                    />
+
+                    <input
+                      value={password}
+                      onChange={(e) => setpassword(e.target.value)}
+                      type="password"
+                      placeholder="Password (min 6 characters)"
+                      className="w-full px-4 py-3 rounded-xl bg-black/40 text-white placeholder-gray-400 border border-gray-600/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-300"
+                    />
                   </div>
-                </div>
 
-                {step === 1 && (
-                  <form onSubmit={sendOtpHandler} className="space-y-5">
-                    <div className="space-y-4">
-                      <input
-                        value={username}
-                        onChange={(e) => setusername(e.target.value)}
-                        type="text"
-                        placeholder="Username"
-                        className="w-full px-4 py-3 rounded-xl bg-black/40 text-white placeholder-gray-400 border border-gray-600/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-300"
-                      />
-
-                      <input
-                        value={email}
-                        onChange={(e) => setemail(e.target.value)}
-                        type="email"
-                        placeholder="Email address"
-                        className="w-full px-4 py-3 rounded-xl bg-black/40 text-white placeholder-gray-400 border border-gray-600/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-300"
-                      />
-
-                      <input
-                        value={password}
-                        onChange={(e) => setpassword(e.target.value)}
-                        type="password"
-                        placeholder="Password (min 6 characters)"
-                        className="w-full px-4 py-3 rounded-xl bg-black/40 text-white placeholder-gray-400 border border-gray-600/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-300"
-                      />
-                    </div>
-
-                    <div className="flex items-start gap-3 mt-4">
-                      <input
-                        type="checkbox"
-                        id="acceptTermsSignup"
-                        checked={acceptedTerms}
-                        onChange={(e) => setAcceptedTerms(e.target.checked)}
-                        className="w-4 h-4 mt-1 rounded bg-black/40 border border-gray-600/40 text-white focus:ring-white/50"
-                      />
-                      <label
-                        htmlFor="acceptTermsSignup"
-                        className="text-gray-300 text-sm cursor-pointer"
-                      >
-                        I agree to the{" "}
-                        <Link
-                          href="/terms-and-conditions"
-                          className="text-white hover:text-gray-300 underline"
-                        >
-                          Terms and Conditions
-                        </Link>
-                      </label>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full mt-6 py-3 cursor-pointer rounded-xl bg-white text-black font-semibold hover:bg-gray-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  <div className="flex items-start gap-3 mt-4">
+                    <input
+                      type="checkbox"
+                      id="acceptTermsSignup"
+                      checked={acceptedTerms}
+                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      className="w-4 h-4 mt-1 rounded bg-black/40 border border-gray-600/40 text-white focus:ring-white/50"
+                    />
+                    <label
+                      htmlFor="acceptTermsSignup"
+                      className="text-gray-300 text-sm cursor-pointer"
                     >
-                      {isLoading ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                          <span>Sending OTP...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2z"
-                            />
-                          </svg>
-                          Send Verification Code
-                        </div>
-                      )}
-                    </button>
-                  </form>
-                )}
+                      I agree to the{" "}
+                      <Link
+                        href="/terms-and-conditions"
+                        className="text-white hover:text-gray-300 underline"
+                      >
+                        Terms and Conditions
+                      </Link>
+                    </label>
+                  </div>
 
-                {step === 2 && (
-                  <div>
-                    <div className="text-center mb-6">
-                      <div className="inline-flex items-center justify-center w-12 h-12 bg-white/10 rounded-full mb-4">
-                        <svg
-                          className="w-6 h-6 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8"
-                          />
-                        </svg>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full mt-6 py-3 cursor-pointer rounded-xl bg-white text-black font-semibold hover:bg-gray-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                        <span>Creating account...</span>
                       </div>
-                      <p className="text-gray-400 text-sm">
-                        Code sent to{" "}
-                        <span className="text-white font-medium">{email}</span>
-                      </p>
-                    </div>
-
-                    <form onSubmit={verifyOtpHandler} className="space-y-5">
-                      <input
-                        value={otp}
-                        onChange={(e) => setotp(e.target.value)}
-                        type="text"
-                        placeholder="000000"
-                        maxLength={6}
-                        className="w-full px-4 py-4 rounded-xl bg-black/40 text-white placeholder-gray-400 border border-gray-600/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-300 text-center text-xl font-mono tracking-widest"
-                      />
-
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full cursor-pointer py-3 rounded-xl bg-white text-black font-semibold hover:bg-gray-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                      >
-                        {isLoading ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                            <span>Verifying...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            Verify Code
-                          </div>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setStep(1)}
-                        className="w-full cursor-pointer py-2 text-gray-400 hover:text-white transition-colors duration-300 text-sm flex items-center justify-center gap-1"
-                      >
+                    ) : (
+                      <div className="flex items-center justify-center gap-2">
                         <svg
                           className="w-4 h-4"
                           fill="none"
@@ -397,74 +212,14 @@ const SignupPage = () => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth="2"
-                            d="M15 19l-7-7 7-7"
+                            d="M5 13l4 4L19 7"
                           />
                         </svg>
-                        Back to edit details
-                      </button>
-                    </form>
-                  </div>
-                )}
-
-                {step === 3 && (
-                  <div>
-                    <div className="text-center mb-6">
-                      <div className="inline-flex items-center justify-center w-14 h-14 bg-green-500/20 rounded-full mb-4">
-                        <svg
-                          className="w-7 h-7 text-green-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
+                        Create Account
                       </div>
-                      <h3 className="text-white font-semibold text-lg mb-2">
-                        Email Verified!
-                      </h3>
-                      <p className="text-gray-400 text-sm">
-                        Complete your registration to access SecureAuth
-                      </p>
-                    </div>
-
-                    <form onSubmit={submithandler} className="space-y-5">
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-3 cursor-pointer rounded-xl bg-green-500 text-white font-semibold hover:bg-green-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                      >
-                        {isLoading ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            <span>Creating account...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                            Complete Registration
-                          </div>
-                        )}
-                      </button>
-                    </form>
-                  </div>
-                )}
+                    )}
+                  </button>
+                </form>
 
                 <div className="text-center mt-6 pt-6 border-t border-gray-700/30">
                   <p className="text-gray-400 text-sm">

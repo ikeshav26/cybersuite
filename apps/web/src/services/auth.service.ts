@@ -73,18 +73,4 @@ export const authService = {
     });
     return res.data;
   },
-
-  sendOTP: async (email: string): Promise<{ message: string }> => {
-    const res = await axios.post(`${env.API_URL}/auth/send-otp`, { email }, {
-      withCredentials: true,
-    });
-    return res.data;
-  },
-
-  verifyOTP: async (email: string, otp: string): Promise<{ message: string }> => {
-    const res = await axios.post(`${env.API_URL}/auth/verify-otp`, { email, otp }, {
-      withCredentials: true,
-    });
-    return res.data;
-  },
 };
