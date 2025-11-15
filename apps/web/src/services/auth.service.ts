@@ -1,10 +1,19 @@
 import axios from 'axios';
 import { env } from '@/lib/env';
 
-export interface LoginHistoryEntry {
-  timestamp: string;
-  ipAddress?: string;
-  userAgent?: string;
+export interface LoginHistory {
+  loggedInAt: string;
+  ip: string;
+  location?: {
+    city?: string;
+    region?: string;
+    country?: string;
+  };
+  device?: {
+    browser?: string;
+    os?: string;
+  };
+  isp?: string;
 }
 
 export interface User {
@@ -16,7 +25,7 @@ export interface User {
   emailVerified?: boolean;
   verified?: boolean;
   createdAt?: string;
-  loginHistory?: LoginHistoryEntry[];
+  loginHistory?: LoginHistory[];
 }
 
 export interface LoginCredentials {

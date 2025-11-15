@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuthStore } from "@/stores/auth.store";
 import { authService } from "@/services/auth.service";
 
@@ -36,11 +37,19 @@ const LoginPage = () => {
 
       const transformedUser = {
         ...response.user,
-        loginHistory: response.user.loginHistory?.map((entry: any) => ({
-          ...entry,
-          loggedInAt: entry.timestamp || entry.loggedInAt,
-          ip: entry.ipAddress || entry.ip,
-        })),
+        loginHistory: response.user.loginHistory?.map(
+          (entry: {
+            timestamp?: string;
+            loggedInAt?: string;
+            ipAddress?: string;
+            ip?: string;
+          }) => ({
+            ...entry,
+            loggedInAt:
+              entry.timestamp || entry.loggedInAt || new Date().toISOString(),
+            ip: entry.ipAddress || entry.ip || "unknown",
+          })
+        ),
       };
 
       setAuth(transformedUser, response.token);
@@ -49,33 +58,43 @@ const LoginPage = () => {
 
       router.push("/");
       toast.success(response.message || "Logged in successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.error?.message || err.message || "Error logging in";
+        (
+          err as {
+            response?: { data?: { error?: { message?: string } } };
+            message?: string;
+          }
+        ).response?.data?.error?.message ||
+        (err as { message?: string }).message ||
+        "Error logging in";
       toast.error(errorMessage);
-      console.error("Login error:", err.response?.data || err);
+      console.error(
+        "Login error:",
+        (err as { response?: { data?: unknown } }).response?.data || err
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex items-center justify-center p-4 relative overflow-x-hidden">
+    <div className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden bg-black">
       <div className="absolute inset-0">
-        <img
+        <Image
           src="/background-auth.webp"
           alt="Background"
-          className="w-full h-full object-cover opacity-30"
+          fill
+          className="object-cover opacity-30"
+          priority
         />
         <div className="absolute inset-0 bg-black/60"></div>
       </div>
-
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/3 rounded-full blur-3xl"></div>
       </div>
-
       <div className="relative z-10 w-full max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
           <div className="text-center lg:text-left space-y-6">
@@ -128,10 +147,7 @@ const LoginPage = () => {
 
           <div className="flex justify-center lg:justify-end">
             <div className="w-full max-w-md">
-              <div
-                className="backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8"
-                style={{ backgroundColor: "rgba(36, 36, 36, 0.95)" }}
-              >
+              <div className="backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 bg-zinc-900/95">
                 <h2 className="text-2xl text-white font-bold mb-1 text-center">
                   Log In
                 </h2>

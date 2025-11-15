@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
 import { authService } from "@/services/auth.service";
@@ -40,16 +41,7 @@ const SignupPage = () => {
     try {
       const res = await authService.register({ username, email, password });
 
-      const transformedUser = {
-        ...res.user,
-        loginHistory: res.user.loginHistory?.map(entry => ({
-          loggedInAt: entry.timestamp || (entry as any).loggedInAt,
-          ip: (entry as any).ip || (entry as any).ipAddress || '',
-          ...entry
-        }))
-      };
-
-      setAuth(transformedUser, res.token);
+      setAuth(res.user, res.token);
 
       setusername("");
       setemail("");
@@ -57,23 +49,31 @@ const SignupPage = () => {
 
       router.push("/");
       toast.success(res.message || "Account created successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.error?.message || err.message || "Error signing up";
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          .response?.data?.error?.message ||
+        (err as Error).message ||
+        "Error signing up";
       toast.error(errorMessage);
-      console.error("Registration error:", err.response?.data || err);
+      console.error(
+        "Registration error:",
+        (err as { response?: { data?: unknown } }).response?.data || err
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex items-center justify-center p-4 relative overflow-x-hidden">
+    <div className="relative min-h-screen bg-black overflow-hidden">
       <div className="absolute inset-0">
-        <img
+        <Image
           src="/background-auth.webp"
           alt="Background"
-          className="w-full h-full object-cover opacity-30"
+          fill
+          className="object-cover opacity-30"
+          priority
         />
         <div className="absolute inset-0 bg-black/60"></div>
       </div>
@@ -140,10 +140,7 @@ const SignupPage = () => {
 
           <div className="flex justify-center lg:justify-end">
             <div className="w-full max-w-md">
-              <div
-                className="backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8"
-                style={{ backgroundColor: "rgba(36, 36, 36, 0.95)" }}
-              >
+              <div className="backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 bg-[rgba(36,36,36,0.95)]">
                 <h2 className="text-2xl text-white font-bold mb-1 text-center">
                   Create Account
                 </h2>
