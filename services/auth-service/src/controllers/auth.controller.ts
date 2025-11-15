@@ -82,6 +82,22 @@ export const register = asyncHandler(async (req: Request, res: Response, _next: 
 
     logger.info('User registered successfully', { userId: user.id, email: user.email });
 
+    // Generate tokens for auto-login
+    const token = generateToken({ id: user.id, email: user.email, role: user.role });
+    const refreshToken = generateRefreshToken(user.id);
+
+    // Create session
+    await prisma.session.create({
+        data: {
+            userId: user.id,
+            token,
+            refreshToken,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+        },
+    });
+
     // Log audit
     await prisma.auditLog.create({
         data: {
@@ -95,8 +111,10 @@ export const register = asyncHandler(async (req: Request, res: Response, _next: 
     });
 
     const { data, statusCode } = successResponse({
-        message: 'Registration successful. Please verify your email.',
+        message: 'Registration successful.',
         user,
+        token,
+        refreshToken,
         verificationToken, // In production, send this via email instead
     }, 201);
 
