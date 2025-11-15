@@ -3,6 +3,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { App } from '@octokit/app';
 import {
   asyncHandler,
   successResponse,
@@ -497,11 +498,17 @@ export const githubOAuth = asyncHandler(
   async (_req: Request, res: Response, _next: NextFunction) => {
     logger.info('GitHub OAuth initiated');
 
-    const { data, statusCode } = successResponse({
-      message: 'GitHub OAuth endpoint - to be implemented',
-    });
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    if (!clientId) {
+      throw new Error('GITHUB_CLIENT_ID is not configured');
+    }
 
-    res.status(statusCode).json(data);
+    const redirectUri = `${process.env.API_URL || 'http://localhost:3001'}/api/auth/oauth/github/callback`;
+    const scope = 'read:user user:email read:org';
+
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+
+    res.redirect(githubAuthUrl);
   }
 );
 
@@ -509,12 +516,131 @@ export const githubOAuthCallback = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction) => {
     logger.info('GitHub OAuth callback', { query: req.query });
 
-    const { data, statusCode } = successResponse({
-      message: 'GitHub OAuth callback endpoint - to be implemented',
-      query: req.query,
+    const { code } = req.query;
+
+    if (!code || typeof code !== 'string') {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const errorUrl = new URL('/user-dashboard', frontendUrl);
+      errorUrl.searchParams.set('github_auth', 'error');
+      errorUrl.searchParams.set('error', 'No authorization code');
+      res.redirect(errorUrl.toString());
+      return;
+    }
+
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const errorUrl = new URL('/user-dashboard', frontendUrl);
+      errorUrl.searchParams.set('github_auth', 'error');
+      errorUrl.searchParams.set('error', 'OAuth not configured');
+      res.redirect(errorUrl.toString());
+      return;
+    }
+
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+      }),
     });
 
-    res.status(statusCode).json(data);
+    const tokenData = (await tokenResponse.json()) as { access_token?: string; error?: string };
+
+    if (!tokenData.access_token) {
+      logger.error('Failed to get access token', { tokenData });
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const errorUrl = new URL('/user-dashboard', frontendUrl);
+      errorUrl.searchParams.set('github_auth', 'error');
+      errorUrl.searchParams.set('error', 'Failed to authenticate');
+      res.redirect(errorUrl.toString());
+      return;
+    }
+
+    // Get user information
+    const userResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    const userData = (await userResponse.json()) as { login?: string; id?: number; email?: string };
+
+    if (!userData.login) {
+      logger.error('Failed to get user data', { userData });
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const errorUrl = new URL('/user-dashboard', frontendUrl);
+      errorUrl.searchParams.set('github_auth', 'error');
+      errorUrl.searchParams.set('error', 'Failed to get user info');
+      res.redirect(errorUrl.toString());
+      return;
+    }
+
+    // Get user's GitHub App installations using GitHub App credentials
+    // OAuth tokens don't have permission to list app installations
+    // So we use the GitHub App itself to find installations for this user
+
+    const appId = process.env.GITHUB_APP_ID;
+    const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
+
+    let installation = null;
+
+    if (appId && privateKey) {
+      try {
+        const app = new App({
+          appId,
+          privateKey,
+        });
+
+        // Get all installations for this app
+        const { data: installations } = await app.octokit.request('GET /app/installations');
+
+        logger.info('GitHub App installations', {
+          total: installations.length,
+          username: userData.login,
+        });
+
+        // Find installation for this user
+        installation = installations.find(
+          (inst: any) => inst.account?.login?.toLowerCase() === userData.login?.toLowerCase()
+        );
+
+        if (installation) {
+          logger.info('Found matching installation', {
+            installationId: installation.id,
+            account: installation.account?.login,
+          });
+        } else {
+          logger.warn('No matching installation found for user', {
+            username: userData.login,
+            availableAccounts: installations.map((i: any) => i.account?.login),
+          });
+        }
+      } catch (err) {
+        logger.error('Error fetching GitHub App installations');
+        console.error(err);
+      }
+    } else {
+      logger.warn('GitHub App credentials not configured');
+    } // Redirect back to frontend with user info
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const redirectUrl = new URL('/user-dashboard', frontendUrl);
+    redirectUrl.searchParams.set('github_auth', 'success');
+    redirectUrl.searchParams.set('username', userData.login || '');
+    if (installation) {
+      redirectUrl.searchParams.set('installation_id', installation.id.toString());
+    }
+
+    res.redirect(redirectUrl.toString());
   }
 );
 

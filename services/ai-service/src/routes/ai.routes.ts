@@ -42,9 +42,9 @@ router.post('/scan-repository', aiController.scanRepository);
 router.get('/repositories/:owner/:repo/status', aiController.getRepositoryStatus);
 
 /**
- * GET /api/ai/user/:username/repositories
+ * POST /api/ai/user/:username/repositories
  * Get all repositories for a GitHub user/org with installation status
  */
-router.get('/user/:username/repositories', aiController.getUserRepositories);
+router.post('/user/:username/repositories', aiController.getUserRepositories);
 
 export default router;

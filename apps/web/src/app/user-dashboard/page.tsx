@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import ProfileTab from '@/components/ProfileTab';
 import AuthorizeGitHubTab from '@/components/AuthorizeGitHubTab';
@@ -9,6 +9,23 @@ import AddServerTab from '@/components/AddServerTab';
 const UserDashboard = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'github' | 'server'>('profile');
+
+  // Persist active tab in localStorage
+  useEffect(() => {
+    const savedTab = localStorage.getItem('dashboard_active_tab') as
+      | 'profile'
+      | 'github'
+      | 'server'
+      | null;
+    if (savedTab) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  const handleTabChange = (tab: 'profile' | 'github' | 'server') => {
+    setActiveTab(tab);
+    localStorage.setItem('dashboard_active_tab', tab);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 pt-16 relative">
@@ -34,7 +51,7 @@ const UserDashboard = () => {
             <div className="border-b border-gray-700">
               <nav className="flex space-x-8">
                 <button
-                  onClick={() => setActiveTab('profile')}
+                  onClick={() => handleTabChange('profile')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'profile'
                       ? 'border-blue-500 text-blue-400'
@@ -44,7 +61,7 @@ const UserDashboard = () => {
                   Profile
                 </button>
                 <button
-                  onClick={() => setActiveTab('github')}
+                  onClick={() => handleTabChange('github')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'github'
                       ? 'border-blue-500 text-blue-400'
@@ -54,7 +71,7 @@ const UserDashboard = () => {
                   Authorize GitHub
                 </button>
                 <button
-                  onClick={() => setActiveTab('server')}
+                  onClick={() => handleTabChange('server')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'server'
                       ? 'border-blue-500 text-blue-400'

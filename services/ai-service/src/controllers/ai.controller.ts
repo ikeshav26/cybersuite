@@ -134,6 +134,7 @@ export const getUserRepositories = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { username } = req.params;
     const { installationId } = req.body;
+    console.log('installationId', installationId);
 
     if (!username) {
       throw new Error('Username parameter is required');

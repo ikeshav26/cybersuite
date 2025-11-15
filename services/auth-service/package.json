@@ -20,6 +20,7 @@
     "@cybersec/config": "workspace:*",
     "@cybersec/types": "workspace:*",
     "@cybersec/utils": "workspace:*",
+    "@octokit/app": "^16.1.2",
     "@prisma/client": "^6.19.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",

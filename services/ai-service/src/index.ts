@@ -7,6 +7,9 @@ import { logger } from '@cybersec/utils';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
 import aiRoutes from './routes/ai.routes.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const PORT = config.aiService.port;
@@ -53,5 +56,6 @@ app.use('/api/ai', aiRoutes);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  logger.info(`AI Service running on port ${PORT}`);
+  // console.log(process.env.GITHUB_APP_ID)
+  logger.info('AI Service running on port ' + PORT);
 });

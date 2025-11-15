@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Octokit } from '@octokit/rest';
+import { App } from '@octokit/app';
 import { config } from '@cybersec/config';
 import { logger, ServiceUnavailableError } from '@cybersec/utils';
 import type { AIExplanation, AIFixSuggestion, AutoPR } from '@cybersec/types';
@@ -18,14 +19,23 @@ function getAnthropic(): Anthropic {
   return anthropicClient;
 }
 
-// GitHub App authentication will be handled per-installation
-// using installation access tokens, not a global client
-function getGitHubApp(installationId: number): Octokit {
-  // In production, use @octokit/auth-app to get installation access token
-  // For now, this is a placeholder that will be implemented with proper GitHub App auth
-  return new Octokit({
-    auth: process.env.GITHUB_APP_INSTALLATION_TOKEN, // Temporary - will use proper App auth
+// GitHub App authentication per installation
+async function getGitHubApp(installationId: number) {
+  const appId = process.env.GITHUB_APP_ID;
+  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
+
+  if (!appId || !privateKey) {
+    throw new ServiceUnavailableError('GitHub App credentials not configured');
+  }
+
+  const app = new App({
+    appId,
+    privateKey,
   });
+
+  // Get installation-specific octokit instance
+  const octokit = await app.getInstallationOctokit(installationId);
+  return octokit;
 }
 
 /**
@@ -141,17 +151,17 @@ export async function createPullRequest(
     const branchName = `security-fix-${Date.now()}`;
 
     // Create branch and commit fixes using GitHub API
-    const github = getGitHubApp(repoInfo.installationId);
+    const github = await getGitHubApp(repoInfo.installationId);
 
     // Get base ref
-    const { data: baseRef } = await github.rest.git.getRef({
+    const { data: baseRef } = await github.request('GET /repos/{owner}/{repo}/git/ref/{ref}', {
       owner: repoOwner,
       repo: repoName,
       ref: `heads/${baseBranch}`,
     });
 
     // Create new branch
-    await github.rest.git.createRef({
+    await github.request('POST /repos/{owner}/{repo}/git/refs', {
       owner: repoOwner,
       repo: repoName,
       ref: `refs/heads/${branchName}`,
@@ -168,7 +178,7 @@ export async function createPullRequest(
     }
 
     // Create pull request
-    const { data: pr } = await github.rest.pulls.create({
+    const { data: pr } = await github.request('POST /repos/{owner}/{repo}/pulls', {
       owner: repoOwner,
       repo: repoName,
       title,
@@ -286,10 +296,10 @@ export async function scanRepositoryForVulnerabilities(
   filesScanned: number;
 }> {
   try {
-    const github = getGitHubApp(installationId);
+    const github = await getGitHubApp(installationId);
 
     // Get repository contents
-    const { data: contents } = await github.rest.repos.getContent({
+    const { data: contents } = await github.request('GET /repos/{owner}/{repo}/contents/{path}', {
       owner,
       repo,
       path: '',
@@ -382,27 +392,29 @@ export async function fetchUserRepositories(
   repository_count: number;
 }> {
   try {
-    const github = getGitHubApp(installationId);
+    const github = await getGitHubApp(installationId);
 
-    // Get user repositories
-    const { data: repos } = await github.rest.repos.listForUser({
-      username,
+    // Get only repositories accessible to this installation
+    // This returns only repos where the GitHub App is installed
+    const { data: response } = await github.request('GET /installation/repositories', {
       per_page: 100,
-      type: 'all',
     });
+    console.log('response', response);
 
-    logger.info('Fetched user repositories', {
+    const repos = response.repositories || [];
+
+    logger.info('Fetched installation repositories', {
       username,
+      installationId,
       count: repos.length,
     });
 
-    // In production, check which repos have the GitHub App installed
-    const installed = true; // Mock installation status
+    const installed = repos.length > 0;
 
     return {
       success: true,
       installed,
-      repositories: repos.map((repo) => ({
+      repositories: repos.map((repo: any) => ({
         id: repo.id,
         name: repo.name,
         full_name: repo.full_name,
@@ -417,8 +429,9 @@ export async function fetchUserRepositories(
       repository_count: repos.length,
     };
   } catch (error) {
-    logger.error('Failed to fetch user repositories', {
+    logger.error('Failed to fetch installation repositories', {
       username,
+      installationId,
       errorMessage: error instanceof Error ? error.message : String(error),
     });
 
