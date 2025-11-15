@@ -5,7 +5,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthenticationError, AuthorizationError } from '@cybersec/utils';
-import type { User, UserRole } from '@cybersec/types';
+import type { User, UserRole, Session } from '@cybersec/types';
 
 export interface AuthRequest extends Request {
     user?: User;
@@ -26,9 +26,8 @@ export function authenticate(req: AuthRequest, _res: Response, next: NextFunctio
             throw new Error('JWT_SECRET not configured');
         }
 
-        const decoded = jwt.verify(token, secret) as User;
-        req.user = decoded;
-
+        const decoded = jwt.verify(token, secret) as Session;
+        req.body.sessionId = decoded.userId;
         next();
     } catch (error) {
         if (error instanceof jwt.JsonWebTokenError) {

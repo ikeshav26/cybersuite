@@ -53,7 +53,22 @@ export const getCurrentUser = asyncHandler(async (req: AuthRequest, res: Respons
                     sessions: true,
                     apiKeys: true,
                 }
-            }
+            },
+            loginHistory: {
+                orderBy: { loggedInAt: 'desc' },
+                take: 10,
+                select: {
+                    id: true,
+                    loggedInAt: true,
+                    ipAddress: true,
+                    city: true,
+                    region: true,
+                    country: true,
+                    browser: true,
+                    os: true,
+                    isp: true,
+                },
+            },
         },
     });
 
@@ -228,6 +243,42 @@ export const changePassword = asyncHandler(async (req: AuthRequest, res: Respons
 
     const { data, statusCode } = successResponse({
         message: 'Password changed successfully. All other sessions have been logged out.',
+    });
+
+    res.status(statusCode).json(data);
+});
+
+export const getLoginHistory = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
+    const userId = req.body.sessionId;
+    console.log("request aagi oyeeeeeee!!",userId)
+
+    if (!userId) {
+        throw new AuthenticationError('User not authenticated');
+    }
+
+    logger.info('Fetching login history', { userId });
+
+    const loginHistory = await prisma.loginHistory.findMany({
+        where: { userId },
+        orderBy: { loggedInAt: 'desc' },
+        take: 10,
+        select: {
+            id: true,
+            loggedInAt: true,
+            ipAddress: true,
+            city: true,
+            region: true,
+            country: true,
+            browser: true,
+            os: true,
+            isp: true,
+        },
+    });
+
+    logger.info('Login history fetched successfully', { userId, count: loginHistory.length });
+
+    const { data, statusCode } = successResponse({
+        loginHistory,
     });
 
     res.status(statusCode).json(data);

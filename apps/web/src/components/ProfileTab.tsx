@@ -1,10 +1,55 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
+import axios from 'axios';
+// import { API_URL } from '@/lib/env';
+
+interface LoginHistoryItem {
+  id: string;
+  loggedInAt: string;
+  ipAddress: string;
+  city: string;
+  region: string;
+  country: string;
+  browser: string;
+  os: string;
+  isp: string;
+}
 
 const ProfileTab = () => {
   const { user } = useAuthStore();
+  const [loginHistory, setLoginHistory] = useState<LoginHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLoginHistory = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      
+      const response = await axios.get(`http://localhost:3001/api/users/login-history`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      
+      if (response.data?.data?.loginHistory) {
+        setLoginHistory(response.data.data.loginHistory);
+      }
+    } catch (error) {
+      console.error('Error fetching login history:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLoginHistory();
+  }, [fetchLoginHistory]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -125,26 +170,32 @@ const ProfileTab = () => {
                 </tr>
               </thead>
               <tbody>
-                {user?.loginHistory && user.loginHistory.length > 0 ? (
-                  user.loginHistory.slice(0, 5).map((login: any, index: number) => (
-                    <tr key={index} className="border-b border-gray-800 hover:bg-white/5 transition-colors">
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 px-6 text-center text-gray-400">
+                      Loading login history...
+                    </td>
+                  </tr>
+                ) : loginHistory && loginHistory.length > 0 ? (
+                  loginHistory.map((login) => (
+                    <tr key={login.id} className="border-b border-gray-800 hover:bg-white/5 transition-colors">
                       <td className="py-4 px-6 text-white">
-                        {login.loggedInAt ? formatDate(login.loggedInAt) : 'N/A'}
+                        {formatDate(login.loggedInAt)}
                       </td>
                       <td className="py-4 px-6 text-gray-300">
-                        {login.location ? 
-                          `${login.location.city || ''}, ${login.location.region || ''}, ${login.location.country || ''}`.replace(/^,\s*|,\s*$/g, '') 
-                          : 'Unknown'
-                        }
+                        {[login.city, login.region, login.country]
+                          .filter(Boolean)
+                          .filter(item => item !== 'Unknown')
+                          .join(', ') || 'Unknown'}
                       </td>
                       <td className="py-4 px-6 text-gray-300">
-                        {login.device ? 
-                          `${login.device.browser || 'Unknown'} on ${login.device.os || 'Unknown'}` 
+                        {login.browser && login.os 
+                          ? `${login.browser} on ${login.os}` 
                           : 'Unknown Device'
                         }
                       </td>
                       <td className="py-4 px-6 text-gray-300 font-mono">
-                        {login.ip || 'N/A'}
+                        {login.ipAddress || 'N/A'}
                       </td>
                       <td className="py-4 px-6 text-gray-300">
                         {login.isp || 'Unknown'}
