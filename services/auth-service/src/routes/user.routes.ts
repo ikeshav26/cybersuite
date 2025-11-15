@@ -14,5 +14,6 @@ router.use(authenticate);
 router.get('/me', userController.getCurrentUser);
 router.put('/me', userController.updateProfile);
 router.post('/change-password', userController.changePassword);
+router.get('/login-history', userController.getLoginHistory);
 
 export default router;

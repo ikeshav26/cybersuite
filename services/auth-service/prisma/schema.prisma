@@ -11,32 +11,33 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  username      String?   @unique
-  passwordHash  String?
-  name          String?
-  emailVerified Boolean   @default(false)
+  id                String    @id @default(cuid())
+  email             String    @unique
+  username          String?   @unique
+  passwordHash      String?
+  name              String?
+  emailVerified     Boolean   @default(false)
   verificationToken String?
-  resetToken    String?
-  resetTokenExpiry DateTime?
-  role          UserRole  @default(USER)
-  
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  role              UserRole  @default(USER)
+
   // OAuth fields
-  githubId      String?   @unique
-  googleId      String?   @unique
-  avatar        String?
-  
+  githubId String? @unique
+  googleId String? @unique
+  avatar   String?
+
   // Timestamps
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLoginAt   DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
   // Relations
-  sessions      Session[]
-  apiKeys       ApiKey[]
-  auditLogs     AuditLog[]
-  
+  sessions     Session[]
+  apiKeys      ApiKey[]
+  auditLogs    AuditLog[]
+  loginHistory LoginHistory[]
+
   @@index([email])
   @@index([username])
   @@map("users")
@@ -50,54 +51,73 @@ model Session {
   expiresAt    DateTime
   ipAddress    String?
   userAgent    String?
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([token])
   @@map("sessions")
 }
 
 model ApiKey {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  key         String   @unique
-  keyHash     String
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  isActive    Boolean  @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  key        String    @unique
+  keyHash    String
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([key])
   @@map("api_keys")
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  action     String
-  resource   String
-  details    Json?
-  ipAddress  String?
-  userAgent  String?
-  
-  createdAt  DateTime @default(now())
-  
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
+  id        String  @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([userId])
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model LoginHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  loggedInAt DateTime @default(now())
+  ipAddress  String?
+  city       String?
+  region     String?
+  country    String?
+  browser    String?
+  os         String?
+  isp        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([loggedInAt])
+  @@map("login_history")
 }
 
 enum UserRole {

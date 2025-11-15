@@ -30,6 +30,25 @@ const logger = createLogger({
     pretty: process.env.NODE_ENV === 'development'
 });
 
+// Helper functions to parse user agent
+function extractBrowser(userAgent: string): string {
+    if (userAgent.includes('Chrome')) return 'Chrome';
+    if (userAgent.includes('Firefox')) return 'Firefox';
+    if (userAgent.includes('Safari')) return 'Safari';
+    if (userAgent.includes('Edge')) return 'Edge';
+    if (userAgent.includes('Opera')) return 'Opera';
+    return 'Unknown';
+}
+
+function extractOS(userAgent: string): string {
+    if (userAgent.includes('Windows')) return 'Windows';
+    if (userAgent.includes('Mac OS')) return 'MacOS';
+    if (userAgent.includes('Linux')) return 'Linux';
+    if (userAgent.includes('Android')) return 'Android';
+    if (userAgent.includes('iOS')) return 'iOS';
+    return 'Unknown';
+}
+
 export const register = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
     logger.info('Registration attempt', { email: req.body.email });
 
@@ -166,6 +185,40 @@ export const login = asyncHandler(async (req: Request, res: Response, _next: Nex
         where: { id: user.id },
         data: { lastLoginAt: new Date() },
     });
+
+    // Parse user agent to extract browser and OS info
+    const userAgent = req.headers['user-agent'] || '';
+    const browser = extractBrowser(userAgent);
+    const os = extractOS(userAgent);
+
+    // Create login history entry
+    await prisma.loginHistory.create({
+        data: {
+            userId: user.id,
+            ipAddress: req.ip || 'unknown',
+            browser,
+            os,
+            // In production, you would use a geolocation service to get these
+            city: 'Unknown',
+            region: 'Unknown',
+            country: 'Unknown',
+            isp: 'Unknown',
+        },
+    });
+
+    // Keep only last 10 login history entries
+    const allHistory = await prisma.loginHistory.findMany({
+        where: { userId: user.id },
+        orderBy: { loggedInAt: 'desc' },
+        select: { id: true },
+    });
+
+    if (allHistory.length > 10) {
+        const toDelete = allHistory.slice(10).map((h: { id: string }) => h.id);
+        await prisma.loginHistory.deleteMany({
+            where: { id: { in: toDelete } },
+        });
+    }
 
     logger.info('User logged in successfully', { userId: user.id, sessionId: session.id });
 
