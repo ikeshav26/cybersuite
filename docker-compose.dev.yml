@@ -1,0 +1,157 @@
+version: '3.8'
+
+# Development docker-compose file that builds images locally
+# Use this for local development: docker-compose -f docker-compose.dev.yml up
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cybersec-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cybersec
+      POSTGRES_PASSWORD: cybersec123
+      POSTGRES_DB: cybersec_auth
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cybersec']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cybersec-network
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: cybersec-redis-dev
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cybersec-network
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: cybersec-minio-dev
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - cybersec-network
+
+  # Auth Service (built locally)
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    container_name: cybersec-auth-service-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://cybersec:cybersec123@postgres:5432/cybersec_auth
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-super-secret-jwt-key}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+    networks:
+      - cybersec-network
+
+  # AI Service (built locally)
+  ai-service:
+    build:
+      context: .
+      dockerfile: services/ai-service/Dockerfile
+    container_name: cybersec-ai-service-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    ports:
+      - '3002:3002'
+    networks:
+      - cybersec-network
+
+  # Securebot Service (built locally)
+  securebot:
+    build:
+      context: .
+      dockerfile: services/securebot/Dockerfile
+    container_name: cybersec-securebot-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_PRIVATE_KEY: ${GITHUB_PRIVATE_KEY}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - '3003:3003'
+    networks:
+      - cybersec-network
+
+  # Next.js Web Application (built locally)
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: cybersec-web-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      NEXT_PUBLIC_AUTH_URL: http://localhost/api/auth
+    depends_on:
+      - auth-service
+      - ai-service
+      - securebot
+    ports:
+      - '3000:3000'
+    networks:
+      - cybersec-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  cybersec-network:
+    driver: bridge

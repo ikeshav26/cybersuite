@@ -1,9 +1,5 @@
 version: '3.8'
 
-# Production docker-compose file using pre-built images from GitHub Container Registry
-# For local development, use: docker-compose -f docker-compose.dev.yml up
-# For production deployment, use: ./scripts/start.sh
-
 services:
   # PostgreSQL Database
   postgres:
