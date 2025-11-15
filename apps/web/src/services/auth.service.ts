@@ -47,7 +47,23 @@ export const authService = {
     const { data } = await axios.post(`${env.API_URL}/auth/login`, credentials, {
       withCredentials: true,
     });
-    return data;
+    // Backend wraps response in { success: true, data: {...} }
+    const responseData = data.data;
+    return {
+      user: {
+        _id: responseData.user.id,
+        email: responseData.user.email,
+        username: responseData.user.username,
+        name: responseData.user.name,
+        role: responseData.user.role,
+        emailVerified: responseData.user.emailVerified,
+        verified: responseData.user.verified,
+        createdAt: responseData.user.createdAt,
+        loginHistory: responseData.user.loginHistory,
+      },
+      token: responseData.token,
+      message: responseData.message,
+    };
   },
 
   async register(userData: {
@@ -58,7 +74,23 @@ export const authService = {
     const { data } = await axios.post(`${env.API_URL}/auth/register`, userData, {
       withCredentials: true,
     });
-    return data;
+    // Backend wraps response in { success: true, data: {...} }
+    const responseData = data.data;
+    return {
+      user: {
+        _id: responseData.user.id,
+        email: responseData.user.email,
+        username: responseData.user.username,
+        name: responseData.user.name,
+        role: responseData.user.role,
+        emailVerified: responseData.user.emailVerified,
+        verified: responseData.user.verified,
+        createdAt: responseData.user.createdAt,
+        loginHistory: responseData.user.loginHistory,
+      },
+      token: responseData.token,
+      message: responseData.message,
+    };
   },
 
   logout: async (): Promise<void> => {
@@ -71,6 +103,18 @@ export const authService = {
     const res = await axios.get(`${env.API_URL}/users/me`, {
       withCredentials: true,
     });
-    return res.data;
+    // Backend wraps response in { success: true, data: {...} }
+    const responseData = res.data.data;
+    return {
+      _id: responseData.id,
+      email: responseData.email,
+      username: responseData.username,
+      name: responseData.name,
+      role: responseData.role,
+      emailVerified: responseData.emailVerified,
+      verified: responseData.verified,
+      createdAt: responseData.createdAt,
+      loginHistory: responseData.loginHistory,
+    };
   },
 };

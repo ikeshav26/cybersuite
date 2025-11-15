@@ -49,8 +49,10 @@ const SignupPage = () => {
       router.push("/");
       toast.success(res.message || "Account created successfully");
     } catch (err: any) {
-      toast.error(err.message || "Error signing up");
-      console.error(err);
+      const errorMessage =
+        err.response?.data?.error?.message || err.message || "Error signing up";
+      toast.error(errorMessage);
+      console.error("Registration error:", err.response?.data || err);
     } finally {
       setIsLoading(false);
     }
