@@ -45,13 +45,16 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 aiservice
 
-# Copy built application and dependencies
+# Copy all node_modules (workspace root + packages)
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
+
+# Copy built application
 COPY --from=builder /app/services/ai-service/dist ./dist
-COPY --from=builder /app/services/ai-service/node_modules ./node_modules
 COPY --from=builder /app/services/ai-service/package.json ./
 
 USER aiservice
 
-EXPOSE 3002
+EXPOSE 3004
 
 CMD ["node", "dist/index.js"]
