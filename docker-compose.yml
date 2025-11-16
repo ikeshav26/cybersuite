@@ -1,6 +1,6 @@
 version: "3.8"
 
-# Production docker-compose file using pre-built images from GitHub Container Registry
+# Production docker-compose file with local builds
 # For local development, use: docker-compose -f docker-compose.dev.yml up
 # For production deployment, use: ./scripts/start.sh
 
@@ -73,9 +73,11 @@ services:
     networks:
       - cybersec-network
 
-  # Auth Service (pre-built image from GitHub Container Registry)
+  # Auth Service (built locally)
   auth-service:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-mannuvilasara}/cybersec-auth-service:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
     container_name: cybersec-auth-service
     restart: unless-stopped
     env_file:
@@ -107,9 +109,11 @@ services:
     networks:
       - cybersec-network
 
-  # AI Service (pre-built image from GitHub Container Registry)
+  # AI Service (built locally)
   ai-service:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-mannuvilasara}/cybersec-ai-service:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: services/ai-service/Dockerfile
     container_name: cybersec-ai-service
     restart: unless-stopped
     env_file:
@@ -136,9 +140,11 @@ services:
     networks:
       - cybersec-network
 
-  # Securebot Service (pre-built image from GitHub Container Registry)
+  # Securebot Service (built locally)
   securebot:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-mannuvilasara}/cybersec-securebot:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: services/securebot/Dockerfile
     container_name: cybersec-securebot
     restart: unless-stopped
     env_file:
@@ -165,9 +171,11 @@ services:
     networks:
       - cybersec-network
 
-  # Next.js Web Application (pre-built image from GitHub Container Registry)
+  # Next.js Web Application (built locally)
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-mannuvilasara}/cybersec-web:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
     container_name: cybersec-web
     restart: unless-stopped
     env_file:

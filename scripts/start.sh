@@ -51,37 +51,21 @@ echo ""
 # Load environment variables
 source .env
 
-# Set default values
-GITHUB_REPOSITORY_OWNER=${GITHUB_REPOSITORY_OWNER:-mannuvilasara}
-IMAGE_TAG=${IMAGE_TAG:-latest}
-
-echo -e "${BLUE}Using container images from: ghcr.io/${GITHUB_REPOSITORY_OWNER}/cybersec-*:${IMAGE_TAG}${NC}"
-echo ""
-
-# Login to GitHub Container Registry (if needed)
-if [ ! -z "$GITHUB_TOKEN" ]; then
-    echo -e "${GREEN}Logging in to GitHub Container Registry...${NC}"
-    echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin
-fi
-
-echo -e "${BLUE}Pulling latest images...${NC}"
-docker-compose -f docker-compose.prod.yml pull
+echo -e "${BLUE}Building all services locally...${NC}"
+docker-compose -f docker-compose.yml build --parallel
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Failed to pull images. Please ensure:${NC}"
-    echo -e "  1. Images are built and pushed to GitHub Container Registry"
-    echo -e "  2. Images are public OR you're logged in with proper credentials"
-    echo -e "  3. GITHUB_REPOSITORY_OWNER in .env matches your GitHub username"
+    echo -e "${RED}Failed to build images. Please check the build logs above.${NC}"
     exit 1
 fi
 
 echo ""
-echo -e "${GREEN}✓ Images pulled successfully${NC}"
+echo -e "${GREEN}✓ Images built successfully${NC}"
 echo ""
 
 # Start infrastructure services first
 echo -e "${BLUE}Starting infrastructure services (PostgreSQL, Redis, MinIO)...${NC}"
-docker-compose -f docker-compose.prod.yml up -d postgres redis minio
+docker-compose -f docker-compose.yml up -d postgres redis minio
 
 echo ""
 echo -e "${YELLOW}Waiting for databases to be ready...${NC}"
@@ -89,7 +73,7 @@ sleep 15
 
 # Run database migrations
 echo -e "${BLUE}Running database migrations...${NC}"
-docker-compose -f docker-compose.prod.yml run --rm auth-service sh -c "npx prisma migrate deploy" 2>/dev/null || echo -e "${YELLOW}Note: Migration step may require manual setup${NC}"
+docker-compose -f docker-compose.yml run --rm auth-service sh -c "npx prisma db push --skip-generate" 2>/dev/null || echo -e "${YELLOW}Note: Migration step may require manual setup${NC}"
 
 echo ""
 echo -e "${GREEN}✓ Infrastructure services are ready${NC}"
@@ -118,7 +102,7 @@ fi
 # Start all services
 echo ""
 echo -e "${BLUE}Starting all services...${NC}"
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml up -d
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -126,10 +110,10 @@ echo -e "${GREEN}  Deployment Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "Services are starting. Check their status with:"
-echo -e "  ${GREEN}docker-compose -f docker-compose.prod.yml ps${NC}"
+echo -e "  ${GREEN}docker-compose -f docker-compose.yml ps${NC}"
 echo ""
 echo -e "View logs with:"
-echo -e "  ${GREEN}docker-compose -f docker-compose.prod.yml logs -f [service-name]${NC}"
+echo -e "  ${GREEN}docker-compose -f docker-compose.yml logs -f [service-name]${NC}"
 echo ""
 echo -e "Access the application at:"
 echo -e "  ${GREEN}https://secureauth.mannu.live${NC} (if SSL is configured)"
@@ -142,9 +126,9 @@ echo -e "  - AI API: ${BLUE}https://secureauth.mannu.live/api/ai${NC}"
 echo -e "  - Securebot API: ${BLUE}https://secureauth.mannu.live/api/securebot${NC}"
 echo -e "  - MinIO Console: ${BLUE}http://localhost:9001${NC}"
 echo ""
-echo -e "To update to latest images:"
-echo -e "  ${BLUE}docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d${NC}"
+echo -e "To update to latest code:"
+echo -e "  ${BLUE}git pull && ./scripts/deploy.sh${NC}"
 echo ""
 echo -e "To stop all services:"
-echo -e "  ${RED}docker-compose -f docker-compose.prod.yml down${NC}"
+echo -e "  ${RED}docker-compose -f docker-compose.yml down${NC}"
 echo ""
