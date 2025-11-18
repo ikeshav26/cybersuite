@@ -15,22 +15,21 @@
     "@cybersec/types": "workspace:*",
     "@cybersec/utils": "workspace:*",
     "@octokit/app": "^16.1.2",
-    "@octokit/rest": "^21.0.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.18.2",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0",
-    "openai": "^4.77.0",
-    "zod": "^3.24.1"
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "openai": "^6.9.1",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/node": "^20.11.5",
-    "tsup": "^8.0.1",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }
