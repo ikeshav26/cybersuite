@@ -30,12 +30,15 @@ const ProfileTab = () => {
         return;
       }
 
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_GATEWAY_URL}/auth/users/login-history`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      });
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_GATEWAY_URL}/auth/users/login-history`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
 
       if (response.data?.data?.loginHistory) {
         setLoginHistory(response.data.data.loginHistory);

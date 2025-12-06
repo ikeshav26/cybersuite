@@ -9,12 +9,12 @@ const app = express();
 
 // Middleware
 app.use(
-	cors({
-		origin: process.env.CORS_ORIGIN || 'http://localhost:3010',
-		credentials: true,
-		methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-		allowedHeaders: ['Content-Type', 'Authorization'],
-	})
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3010',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -23,13 +23,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 
 app.get('/health', (req, res) => {
-	res.json({ status: 'ok', service: 'api-gateway' });
+  res.json({ status: 'ok', service: 'api-gateway' });
 });
 
 const port = Number(process.env.PORT) || 3000;
 
 app.listen(port, () => {
-	console.log(`api-gateway listening on port ${port}`);
+  console.log(`api-gateway listening on port ${port}`);
 });
 
 export default app;

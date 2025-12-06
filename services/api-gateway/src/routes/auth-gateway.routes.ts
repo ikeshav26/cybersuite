@@ -7,34 +7,33 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001'
 
 // Helper function to proxy requests to auth service
 const proxyToAuthService = async (req: any, res: any, endpoint: string) => {
-	try {
-		const response = await axios({
-			method: req.method,
-			url: `${AUTH_SERVICE_URL}/api${endpoint}`,
-			data: req.body,
-			headers: {
-				'Content-Type': 'application/json',
-				...(req.headers.authorization && { Authorization: req.headers.authorization }),
-			},
-		});
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `${AUTH_SERVICE_URL}/api${endpoint}`,
+      data: req.body,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(req.headers.authorization && { Authorization: req.headers.authorization }),
+      },
+    });
 
-		res.status(response.status).json(response.data);
-	} catch (error: any) {
-		if (error.response) {
-			res.status(error.response.status).json(error.response.data);
-		} else {
-			res.status(500).json({
-				success: false,
-				error: {
-					message: 'Auth service unavailable',
-					code: 'SERVICE_UNAVAILABLE',
-				},
-				timestamp: new Date().toISOString(),
-			});
-		}
-	}
+    res.status(response.status).json(response.data);
+  } catch (error: any) {
+    if (error.response) {
+      res.status(error.response.status).json(error.response.data);
+    } else {
+      res.status(500).json({
+        success: false,
+        error: {
+          message: 'Auth service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
 };
-
 
 // POST /api/auth/register - Register a new user account
 // Body: { email, password, name, username? }
@@ -59,7 +58,9 @@ router.post('/verify-email', (req, res) => proxyToAuthService(req, res, '/auth/v
 
 // POST /api/auth/forgot-password - Request password reset token
 // Body: { email }
-router.post('/forgot-password', (req, res) => proxyToAuthService(req, res, '/auth/forgot-password'));
+router.post('/forgot-password', (req, res) =>
+  proxyToAuthService(req, res, '/auth/forgot-password')
+);
 
 // POST /api/auth/reset-password - Reset password using reset token
 // Body: { token, password }
@@ -83,10 +84,14 @@ router.delete('/users/me', (req, res) => proxyToAuthService(req, res, '/users/me
 // POST /api/auth/users/me/change-password - Change user's password
 // Headers: Authorization: Bearer <token>
 // Body: { currentPassword, newPassword }
-router.post('/users/me/change-password', (req, res) => proxyToAuthService(req, res, '/users/me/change-password'));
+router.post('/users/me/change-password', (req, res) =>
+  proxyToAuthService(req, res, '/users/me/change-password')
+);
 
 // GET /api/auth/users/login-history - Get user's login history
 // Headers: Authorization: Bearer <token>
-router.get('/users/login-history', (req, res) => proxyToAuthService(req, res, '/users/login-history'));
+router.get('/users/login-history', (req, res) =>
+  proxyToAuthService(req, res, '/users/login-history')
+);
 
 export default router;
