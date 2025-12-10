@@ -40,4 +40,8 @@ router.get('/repositories/cloned', async (req, res) => {
   await secureBotController.getClonedRepositories(req, res);
 });
 
+router.get('/scan/logs',async(req,res)=>{
+  await secureBotController.getScanLogs(req,res);
+})
+
 export default router;

@@ -59,6 +59,7 @@ app.get('/', (req, res) => {
       scan_repository: 'POST /api/scan',
       fix_and_create_pr: 'POST /api/fix',
       cloned_repositories: 'GET /api/repositories/cloned',
+      scan_logs: 'GET /api/scan/logs',
     },
     documentation: {
       github_app_setup: 'Create a GitHub App and set GITHUB_APP_ID and GITHUB_PRIVATE_KEY',
@@ -86,6 +87,7 @@ app.use((req, res) => {
       'POST /api/scan',
       'POST /api/fix',
       'GET /api/repositories/cloned',
+      'GET /api/scan/logs',
     ],
   });
 });

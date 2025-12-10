@@ -7,7 +7,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 class SecurityService {
-  constructor() {
+  constructor(controller = null) {
+    this.controller = controller;
     if (!process.env.GOOGLE_AI_API_KEY) {
       throw new Error('GOOGLE_AI_API_KEY not found in environment variables');
     }
@@ -57,6 +58,16 @@ class SecurityService {
       });
 
       console.log(`📁 Found ${files.length} files`);
+
+      if (this.controller) {
+        this.controller.scanLogs.push({
+          timestamp: new Date(),
+          repoId: this.controller.currentRepoId || 'unknown',
+          username: this.controller.currentUsername || 'unknown',
+          status: 'scanning',
+          message: `Found ${files.length} files to scan`
+        });
+      }
 
       const issues = [];
       let filesScanned = 0;
@@ -193,6 +204,20 @@ class SecurityService {
 
       console.log(`✅ Scan complete: ${issues.length} issues found`);
 
+      if (this.controller) {
+        const criticalCount = summary.critical;
+        const highCount = summary.high;
+        const mediumCount = summary.medium;
+        
+        this.controller.scanLogs.push({
+          timestamp: new Date(),
+          repoId: this.controller.currentRepoId || 'unknown',
+          username: this.controller.currentUsername || 'unknown',
+          status: 'scanned',
+          message: `Scan complete: ${issues.length} issues found (Critical: ${criticalCount}, High: ${highCount}, Medium: ${mediumCount})`
+        });
+      }
+
       return {
         repoPath,
         totalFiles: files.length,
@@ -220,6 +245,7 @@ class SecurityService {
   async fixRepository(repoPath, issues, maxFileSize = 1024 * 200) {
     try {
       console.log(`🔧 AI Fix request for: ${repoPath}`);
+      
 
       if (!issues || issues.length === 0) {
         return {
@@ -238,6 +264,16 @@ class SecurityService {
 
       console.log(`🔍 Found ${issues.length} issues to fix`);
 
+      if (this.controller) {
+        this.controller.scanLogs.push({
+          timestamp: new Date(),
+          repoId: this.controller.currentRepoId || 'unknown',
+          username: this.controller.currentUsername || 'unknown',
+          status: 'fixing',
+          message: `Starting to fix ${issues.length} security issues`
+        });
+      }
+
       const appliedFixes = [];
       const failedFixes = [];
       const skippedFiles = [];
@@ -249,6 +285,16 @@ class SecurityService {
 
         console.log(`\n🔄 Processing ${i + 1}/${issues.length}: ${fileName}`);
         console.log(`🔧 Issue: ${issue.issue}`);
+
+        if (this.controller) {
+          this.controller.scanLogs.push({
+            timestamp: new Date(),
+            repoId: this.controller.currentRepoId || 'unknown',
+            username: this.controller.currentUsername || 'unknown',
+            status: 'fixing',
+            message: `Processing ${fileName} (${i + 1}/${issues.length}) - ${issue.issue}`
+          });
+        }
 
         try {
           // Check if file exists
@@ -369,6 +415,16 @@ class SecurityService {
 
           console.log(`✅ Successfully fixed ${fileName}`);
           console.log(`📊 Size change: ${originalContent.length} → ${fixedContent.length} chars`);
+          
+          if (this.controller) {
+            this.controller.scanLogs.push({
+              timestamp: new Date(),
+              repoId: this.controller.currentRepoId || 'unknown',
+              username: this.controller.currentUsername || 'unknown',
+              status: 'fixing',
+              message: `✓ Fixed ${fileName} - ${issue.issue}`
+            });
+          }
         } catch (error) {
           console.error(`❌ Error processing ${fileName}:`, error.message);
           failedFixes.push({
@@ -394,6 +450,16 @@ class SecurityService {
       console.log(`❌ Failed: ${summary.failed}`);
       console.log(`⏭️ Skipped: ${summary.skipped}`);
       console.log(`📈 Success Rate: ${summary.successRate}`);
+
+      if (this.controller) {
+        this.controller.scanLogs.push({
+          timestamp: new Date(),
+          repoId: this.controller.currentRepoId || 'unknown',
+          username: this.controller.currentUsername || 'unknown',
+          status: 'fixing',
+          message: `Fix complete: ${summary.successful} fixed, ${summary.failed} failed, ${summary.skipped} skipped (${summary.successRate} success rate)`
+        });
+      }
 
       return {
         appliedFixes,

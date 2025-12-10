@@ -3,8 +3,9 @@ import { execSync } from 'child_process';
 import path from 'path';
 
 class RepositoryService {
-  constructor(githubAppService) {
+  constructor(githubAppService, controller = null) {
     this.githubAppService = githubAppService;
+    this.controller = controller;
     this.reposDir = path.join(process.cwd(), 'repos');
     this.ensureReposDirectory();
   }
@@ -23,6 +24,15 @@ class RepositoryService {
       const repoInfo = await this.githubAppService.findRepositoryById(repoId);
 
       if (!repoInfo) {
+        if (this.controller) {
+          this.controller.scanLogs.push({
+            timestamp: new Date(),
+            repoId: repoId,
+            username: 'unknown',
+            status: 'failed',
+            message: `Repository with ID ${repoId} not found in accessible repositories`
+          });
+        }
         throw new Error(`Repository with ID ${repoId} not found in accessible repositories`);
       }
 
@@ -32,7 +42,25 @@ class RepositoryService {
       // Check if repository already exists
       if (fs.existsSync(repoPath)) {
         console.log(`Repository ${repository.name} already exists, pulling latest changes...`);
+        if (this.controller) {
+          this.controller.scanLogs.push({
+            timestamp: new Date(),
+            repoId: repoId,
+            username: installation.account?.login || 'unknown',
+            status: 'cloning',
+            message: `Repository ${repository.name} already exists, pulling latest changes`
+          });
+        }
         await this.pullLatestChanges(repoPath);
+        if (this.controller) {
+          this.controller.scanLogs.push({
+            timestamp: new Date(),
+            repoId: repoId,
+            username: installation.account?.login || 'unknown',
+            status: 'cloning',
+            message: `Repository ${repository.name} updated successfully`
+          });
+        }
         return {
           repository,
           installation,
@@ -48,10 +76,30 @@ class RepositoryService {
       const cloneUrl = repository.clone_url.replace('https://', `https://x-access-token:${token}@`);
 
       console.log(`Cloning repository: ${repository.full_name}`);
+      if (this.controller) {
+        this.controller.scanLogs.push({
+          timestamp: new Date(),
+          repoId: repoId,
+          username: installation.account?.login || 'unknown',
+          status: 'cloning',
+          message: `Started cloning repository: ${repository.full_name}`
+        });
+      }
+      
       execSync(`git clone ${cloneUrl} "${repoPath}"`, {
         stdio: 'inherit',
         cwd: this.reposDir,
       });
+
+      if (this.controller) {
+        this.controller.scanLogs.push({
+          timestamp: new Date(),
+          repoId: repoId,
+          username: installation.account?.login || 'unknown',
+          status: 'cloning',
+          message: `Successfully cloned repository: ${repository.full_name}`
+        });
+      }
 
       return {
         repository,
@@ -110,6 +158,8 @@ class RepositoryService {
   async commitAndPushChanges(
     repoPath,
     branchName,
+    installationId,
+    repositoryFullName,
     commitMessage = '🔒 SecureBot: Fix security vulnerabilities'
   ) {
     try {
@@ -151,8 +201,14 @@ class RepositoryService {
         cwd: repoPath,
       });
 
-      // Push to remote
-      execSync(`git push origin ${branchName}`, {
+      // Get installation token for authenticated push
+      const token = await this.githubAppService.getInstallationToken(installationId);
+      
+      // Set up authenticated remote URL for push
+      const pushUrl = `https://x-access-token:${token}@github.com/${repositoryFullName}.git`;
+      
+      // Push to remote using authenticated URL
+      execSync(`git push ${pushUrl} ${branchName}`, {
         stdio: 'inherit',
         cwd: repoPath,
       });

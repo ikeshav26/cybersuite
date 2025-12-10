@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { env } from '@/lib/env';
 import * as aiService from '@/services/ai.service';
+import ScanLogsModal from './ScanLogsModal';
 
 interface Repository {
   id: number;
@@ -46,6 +47,29 @@ const AuthorizeGitHubTab = () => {
   const hasFetchedRef = useRef(false);
   const [scanningRepos, setScanningRepos] = useState<Set<number>>(new Set());
   const [fixingRepos, setFixingRepos] = useState<Set<number>>(new Set());
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [scanLogs, setScanLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  // Handler for viewing scan logs
+  const handleScanLogs = async () => {
+    setLoadingLogs(true);
+    setShowLogsModal(true);
+    try {
+      const response = await fetch('http://localhost:4000/api/scan/logs');
+      const data = await response.json();
+      if (data.success) {
+        setScanLogs(data.scan_logs);
+      } else {
+        toast.error('Failed to fetch scan logs');
+      }
+    } catch (error) {
+      console.error('Error fetching scan logs:', error);
+      toast.error('Failed to fetch scan logs');
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
 
   // Handler for SecureBot scan
   const handleSecureBotScan = async (repoId: number, repoName: string) => {
@@ -326,6 +350,15 @@ const AuthorizeGitHubTab = () => {
     localStorage.removeItem('github_installation_id');
     toast.success('GitHub disconnected');
   };
+
+
+  const handleLogs=()=>{
+    try{
+
+    }catch(err){
+
+    }
+  }
 
   return (
     <div className="mb-8">
@@ -657,6 +690,38 @@ const AuthorizeGitHubTab = () => {
                                   <>🔧 Auto-Fix</>
                                 )}
                               </button>
+                               <button
+                                onClick={() => handleScanLogs()}
+                                disabled={scanningRepos.has(repo.id) || fixingRepos.has(repo.id)}
+                                className="flex-1 inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                              >
+                                {fixingRepos.has(repo.id) ? (
+                                  <>
+                                    <svg
+                                      className="animate-spin h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                      ></circle>
+                                      <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      ></path>
+                                    </svg>
+                                    Checking logs..
+                                  </>
+                                ) : (
+                                  <>🔧 Check-logs</>
+                                )}
+                              </button>
                             </div>
                           </div>
                           <div className="flex items-center ml-3 gap-2">
@@ -713,6 +778,14 @@ const AuthorizeGitHubTab = () => {
           )}
         </div>
       </div>
+
+      {/* Scan Logs Modal */}
+      <ScanLogsModal
+        isOpen={showLogsModal}
+        onClose={() => setShowLogsModal(false)}
+        logs={scanLogs}
+        loading={loadingLogs}
+      />
     </div>
   );
 };
