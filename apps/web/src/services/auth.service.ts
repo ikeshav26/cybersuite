@@ -53,7 +53,7 @@ interface RegisterResponse {
 
 export const authService = {
   async login(credentials: { email: string; password: string }): Promise<AuthResponse> {
-    const { data } = await axios.post(`${env.API_URL}/auth/login`, credentials, {
+    const { data } = await axios.post(`${env.GATEWAY_URL}/auth/login`, credentials, {
       withCredentials: true,
     });
     // Backend wraps response in { success: true, data: {...} }
@@ -80,7 +80,7 @@ export const authService = {
     email: string;
     password: string;
   }): Promise<RegisterResponse> {
-    const { data } = await axios.post(`${env.API_URL}/auth/register`, userData, {
+    const { data } = await axios.post(`${env.GATEWAY_URL}/auth/register`, userData, {
       withCredentials: true,
     });
     // Backend wraps response in { success: true, data: {...} }
@@ -104,7 +104,7 @@ export const authService = {
 
   logout: async (): Promise<void> => {
     await axios.post(
-      `${env.API_URL}/auth/logout`,
+      `${env.GATEWAY_URL}/auth/logout`,
       {},
       {
         withCredentials: true,
@@ -113,7 +113,7 @@ export const authService = {
   },
 
   getProfile: async (): Promise<AuthResponse['user']> => {
-    const res = await axios.get(`${env.API_URL}/users/me`, {
+    const res = await axios.get(`${env.GATEWAY_URL}/users/me`, {
       withCredentials: true,
     });
     // Backend wraps response in { success: true, data: {...} }

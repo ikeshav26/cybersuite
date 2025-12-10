@@ -30,7 +30,7 @@ export function authenticate(req: AuthRequest, _res: Response, next: NextFunctio
 
     // prefer to use our verifyToken helper which returns a consistent JWTPayload
     // so we avoid casting jwt.verify output directly to session shapes
-    const decoded = (verifyToken(token) as JWTPayload | null);
+    const decoded = verifyToken(token) as JWTPayload | null;
     if (!decoded) {
       throw new AuthenticationError('Invalid authentication token');
     }

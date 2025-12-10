@@ -53,7 +53,7 @@ export async function fetchUserRepositories(
   repositories: Repository[];
   repository_count: number;
 }> {
-  const response = await axios.post(`${env.AI_SERVICE_URL}/user/${username}/repositories`, {
+  const response = await axios.post(`${env.GATEWAY_URL}/ai/user/${username}/repositories`, {
     installationId,
   });
   return response.data.data;
@@ -67,7 +67,7 @@ export async function scanRepository(
   repo: string,
   installationId: number
 ): Promise<ScanResult> {
-  const response = await axios.post(`${env.AI_SERVICE_URL}/scan-repository`, {
+  const response = await axios.post(`${env.GATEWAY_URL}/ai/scan-repository`, {
     owner,
     repo,
     installationId,
@@ -91,7 +91,7 @@ export async function getRepositoryStatus(
     created_at: string;
   };
 }> {
-  const response = await axios.get(`${env.AI_SERVICE_URL}/repositories/${owner}/${repo}/status`);
+  const response = await axios.get(`${env.GATEWAY_URL}/ai/repositories/${owner}/${repo}/status`);
   return response.data.data;
 }
 
@@ -112,7 +112,7 @@ export async function generateSecurityPR(
   url: string;
   status: string;
 }> {
-  const response = await axios.post(`${env.AI_SERVICE_URL}/generate-pr`, {
+  const response = await axios.post(`${env.GATEWAY_URL}/ai/generate-pr`, {
     vulnerabilityIds,
     title,
     description,
@@ -160,7 +160,7 @@ export async function secureBotScan(
     }>;
   };
 }> {
-  const response = await axios.post(`${env.AI_SERVICE_URL}/securebot/scan`, {
+  const response = await axios.post(`${env.GATEWAY_URL}/ai/securebot/scan`, {
     repoId,
     username,
   });
@@ -217,7 +217,7 @@ export async function secureBotFix(
     pull_request_created: boolean;
   };
 }> {
-  const response = await axios.post(`${env.AI_SERVICE_URL}/securebot/fix`, {
+  const response = await axios.post(`${env.GATEWAY_URL}/ai/securebot/fix`, {
     repoId,
     username,
   });
